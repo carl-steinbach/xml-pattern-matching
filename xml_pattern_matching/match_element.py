@@ -1,7 +1,7 @@
 import logging
 from typing import Self
+from xml.etree.ElementTree import Element
 
-from lxml.etree import _Element
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class MatchElement:
         self.tag = tag
         self.match_children_sets = match_children_sets
 
-    def match(self, element, matched_path: str = "") -> bool:
+    def match(self, element: Element, matched_path: str = "") -> bool:
         # Match tag.
         if self.tag != element.tag:
             logger.debug(f"Required tag: '{self.tag}' does not match actual tag: '{element.tag}'. ({matched_path})")
@@ -59,7 +59,7 @@ class MatchElement:
 
         return True
 
-    def match_children(self, element: any, matched_path: str) -> str | None:
+    def match_children(self, element: Element, matched_path: str) -> str | None:
         reason = ""
         for match_children_set_id in self.match_children_sets.keys():
             children_set = self.match_children_sets[match_children_set_id]

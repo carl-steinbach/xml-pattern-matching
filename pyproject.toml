@@ -1,0 +1,23 @@
+[project]
+name = "xml_pattern_matching"
+description = "A short description of the package."
+license = {text = "MIT License"}
+version = "0.0.1"
+authors = [
+    {name = "Carl Steinbach", email = "Steinbachcf01@gmail.com"},
+]
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+  "defusedxml"
+]
+
+[project.urls]
+Homepage = "https://github.com/carl-steinach/xml-pattern-matching"
+Issues = "https://github.com/carl-steinach/xml-pattern-matching/issues"
