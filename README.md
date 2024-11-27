@@ -10,5 +10,6 @@ and the [defusedxml](https://pypi.org/project/defusedxml/) package.
 
 ---
 
-_version_: 0.1.0
-_author_: Carl Steinbach
+_version_ 0.1.0
+
+_author_ Carl Steinbach
