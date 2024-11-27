@@ -1,8 +1,7 @@
-<div class="text-yellow" id="19358318" value="100" >
+<div class="text-blue" id="any value" value="expected_value" >
     <span>child 1</span>
     <div>
-        <div>
-            nested child 2
-        </div>
+        text_1
+        <div>text_2</div>
     </div>
 </div>

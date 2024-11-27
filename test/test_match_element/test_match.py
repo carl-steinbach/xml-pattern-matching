@@ -6,8 +6,7 @@ class TestMatch(MatchTestCase):
     def test_match_a(self):
         match_element = MatchElement(
             "div",
-            ["class", "id"],
-            required_attribute_values=[("value", "100")]
+            required_attributes=["class", "id", ("value", "100")]
         )
         match = match_element.match(element=self.xmltree.getroot())
         self.assertTrue(match)
@@ -15,8 +14,7 @@ class TestMatch(MatchTestCase):
     def test_match_b(self):
         match_element = MatchElement(
             "div",
-            ["class", "id"],
-            required_attribute_values=[("value", "200")]
+            required_attributes=["class", "id", ("value", "200")]
         )
         match = match_element.match(self.xmltree.getroot())
         self.assertFalse(match)
@@ -24,13 +22,8 @@ class TestMatch(MatchTestCase):
     def test_match_c(self):
         match_element = MatchElement(
             "div",
-            ["class", "id"],
-            required_attribute_values=[("value", "200")],
-            match_children_sets={
-                "set 1": [
-                    MatchElement()
-                ]
-            }
+            "extract_this_value",
+            required_attributes=["class", "id", ("value", "200")],
         )
         match = match_element.match(self.xmltree.getroot())
         self.assertFalse(match)
