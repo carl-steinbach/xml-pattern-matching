@@ -3,6 +3,9 @@ from xml.etree.ElementTree import Element
 
 
 class Match:
+    """
+    Represents a successful match, hold the extracted values, the found element, and child match objects recursively
+    """
     children: list[Self]
 
     def __init__(self, extracted_values: dict[str, any], element: Element, set_id: str = None, children=None):

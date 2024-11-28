@@ -12,6 +12,7 @@ def strip_whitespace_and_newlines(text: str):
 
 
 class MatchElement:
+    """Defines a pattern matching a single XML element and potential children."""
     def __init__(
             self,
             tag: str,

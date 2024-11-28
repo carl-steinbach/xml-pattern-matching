@@ -4,6 +4,7 @@
 
 - [x] Extracting values directly from the xml structure
 - [x] Children could be list or dict
+- [ ] combine forbidden attributes with required attributes using ("forbidden_attribute", None)
 - [ ] make children matching more flexible (ordered, unordered, required / forbidden)
   solution could be to include "flat" children sets within a children list directly, rather than nesting them
 
