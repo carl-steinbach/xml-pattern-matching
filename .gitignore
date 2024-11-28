@@ -20,3 +20,5 @@ credentials.txt
 vpn_config.zip
 !find_popup_close_response_schema.json
 emulator.cap
+
+dev

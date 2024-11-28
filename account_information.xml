@@ -1,0 +1,12 @@
+<!-- Layout A -->
+<div>
+    <span>Account Information</span>
+    <div>
+        <div>user@example.com</div>
+        <div>
+            <div>
+                129429.2931 <!-- target data -->
+            </div>
+        </div>
+    </div>
+</div>
