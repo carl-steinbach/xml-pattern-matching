@@ -38,6 +38,9 @@ class TestMatchChildren(MatchTestCase):
                 ]
             }
         )
-        match = match_element.match(self.xmltree.getroot())
+        match, reason = match_element.match(self.xmltree.getroot())
+        if match is None:
+            logging.error(reason)
         self.assertIsNotNone(match)
         self.assertEqual("expected_value", match.extracted_values["value"])
+        logging.info(match)
