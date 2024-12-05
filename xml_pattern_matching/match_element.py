@@ -4,6 +4,7 @@ from typing import Any, Callable, Self
 from xml.etree.ElementTree import Element
 
 from xml_pattern_matching.match import Match
+from xml_pattern_matching.match_element_list import MatchElementList
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +16,7 @@ def strip_whitespace_and_newlines(text: str):
 class MatchElement:
     """Defines a pattern matching a single XML element and potential children."""
     children: dict[str, list[Self]]
-    repeat: tuple[int, int]
+    # Can be a float because infinity is used for matching unlimited elements.
 
     def __init__(
             self,
@@ -24,7 +25,6 @@ class MatchElement:
             required_attributes: list[str | tuple[str, str]] = None,
             forbidden_attributes: list[str | tuple[str, str]] = None,
             children: dict[str, list[Self]] | list[Self] = None,
-            repeat: int | tuple[int, int | None] = 1,
             extract: dict[str, Callable[[Element], any] | str] = None
     ):
         self.forbidden_attributes = forbidden_attributes
@@ -36,18 +36,6 @@ class MatchElement:
                 "_": children
             }
         self.children = children
-        if isinstance(repeat, int):
-            self.repeat = (repeat, repeat)
-        elif isinstance(repeat, tuple) and isinstance(repeat[0], int):
-            if repeat[1] is None:
-                self.repeat = (repeat[0], int(math.inf))
-            elif isinstance(repeat[1], int):
-                repeat: tuple[int, int]
-                self.repeat = repeat
-            else:
-                raise Exception("repeat[1] has to be an int or None")
-        else:
-            raise Exception("repeat has to be a tuple or an int")
         self.extract = extract
 
     def match(self, element: Element, matched_path: str = "") -> tuple[Match | None, str]:
@@ -64,7 +52,8 @@ class MatchElement:
                 raise Exception("expected tag is neither a set or str.")
 
             if not matched_tag:
-                reason = f"Required tag: '{self.tag}' does not match actual tag: '{element.tag}'. ({matched_path})"
+                reason = f"Required tag: '{self.tag}' does not match actual tag: '{
+                    element.tag}'. ({matched_path})"
                 return None, reason
 
         # Match text.
@@ -81,7 +70,8 @@ class MatchElement:
             for required_attribute in self.required_attributes:
                 if isinstance(required_attribute, str):
                     if element.get(required_attribute) is None:
-                        reason = f"Required attribute: '{required_attribute}' is missing. ({matched_path})"
+                        reason = f"Required attribute: '{
+                            required_attribute}' is missing. ({matched_path})"
                         return None, reason
 
                 if isinstance(required_attribute, tuple):
@@ -95,11 +85,13 @@ class MatchElement:
             for forbidden_attribute in self.forbidden_attributes:
                 if isinstance(forbidden_attribute, str):
                     if element.get(forbidden_attribute) is not None:
-                        reason = f"Forbidden attribute: '{forbidden_attribute}' is present. ({matched_path})"
+                        reason = f"Forbidden attribute: '{
+                            forbidden_attribute}' is present. ({matched_path})"
                         return None, reason
 
                 if isinstance(forbidden_attribute, tuple):
-                    actual_attribute_value = element.get(forbidden_attribute[0])
+                    actual_attribute_value = element.get(
+                        forbidden_attribute[0])
                     if actual_attribute_value == forbidden_attribute[1]:
                         reason = (f"Forbidden attribute value {forbidden_attribute[0]}='{forbidden_attribute[1]}'"
                                   f" is present '{actual_attribute_value}'. ({matched_path})")
@@ -121,11 +113,11 @@ class MatchElement:
         # Match Children.
         if self.children is not None:
             # returns all the extractions of the children, needs to be combined
-            reason = ""
-            match, child_reason = self.match_children(element, matched_path, extracted_values)
+            match, child_reason = self.match_children(
+                element, matched_path, extracted_values)
             if match is None:
-                reason = f"Could not match any set of children ({matched_path})" + ": " + child_reason
-            return match, reason
+                return None, f"Could not match any set of children ({matched_path})" + ": " + child_reason
+            return match, ""
         else:
             return Match(extracted_values=extracted_values, element=element), ""
 
@@ -146,7 +138,8 @@ class MatchElement:
                 if match is not None:
                     return match, reason
         else:
-            raise Exception("Attribute `children` is not of type 'list' or 'dict'.")
+            raise Exception(
+                "Attribute `children` is not of type 'list' or 'dict'.")
 
         reason = f"Failed to match children: {reason}"
         return None, reason
@@ -158,26 +151,35 @@ def match_children_set(element: Element, matched_path: str, children_set: list[M
 
     returns: A tuple consisting of a Match object and a string with an explanation, if no match was found.
     """
-    if len(element) != len(children_set):
-        reason = f"Expected {len(children_set)} children, found {len(element)}. ({matched_path})"
-        return None, reason
 
     # has to match each child
     child_matches = []
+    last_reason = ""
     child_index = 0
     match_index = 0
     while child_index < len(element) and match_index < len(children_set):
-        match_element = children_set[match_index]
+        match_element_list: MatchElementList
+        if isinstance(children_set[match_index], MatchElementList):
+            match_element_list = children_set[match_index]
+        else:
+            match_element_list = MatchElementList(
+                children_set[match_index], repeat=1)
+
         repeat_index = 0
         # Match as many matches as possible, within the repeat range.
-        while repeat_index < match_element.repeat[1]:
-            child_match, child_reason = children_set[child_index].match(
-                element=element[child_index], matched_path=matched_path + str(element[child_index].tag)
+        while repeat_index < match_element_list.repeat[1]:
+            if child_index == len(element):
+                break
+            child_match, child_reason = match_element_list.match(
+                element=element[child_index], matched_path=matched_path +
+                str(element[child_index].tag)
             )
+            last_reason = child_reason
             if child_match is None:
-                if repeat_index < match_element.repeat[0]:
+                if repeat_index < match_element_list.repeat[0]:
                     # Not enough matches in a rows.
-                    reason = f"Expected at least {match_element.repeat[0]} repetitions, got {len(child_matches)}"
+                    reason = f"Expected at least {
+                        match_element_list.repeat[0]} repetitions, got {repeat_index}"
                     return None, reason + ": " + child_reason
                 else:
                     # At least repeat[0] matches have been found, continue with the next match element.
@@ -199,15 +201,20 @@ def match_children_set(element: Element, matched_path: str, children_set: list[M
 
         match_index += 1
 
-    # check if matched
-    if len(child_matches) == len(children_set):
-        # build match from children
+    # ALL children have to be matched, AND but all match elements need to match completely.
+    if match_index == len(children_set):
+        if child_index == len(element):
+            return Match(
+                extracted_values=extracted_values,
+                element=element,
+                set_id=set_id,
+                children=child_matches
+            ), ""
+        else:
+            return None, f"Did not match all children. (matched {child_index} / {len(element)})."
 
-        return Match(
-            extracted_values=extracted_values,  # should be like this {"user": [list] if a child has "repeat" on
-            element=element,
-            set_id=set_id,
-            children=child_matches
-        ), ""
+    return None, f"Could not match all Match Elements. (matched {match_index} / {len(children_set)}): {last_reason}"
 
-    return None, f"Could not match all children. (matched {len(child_matches)} / {len(children_set)})"
+
+    # TODO: Add case for: not all children being caught by a match element
+    # return None, f"Could not match all children. (matched {len(child_matches)} / {len(children_set)})"

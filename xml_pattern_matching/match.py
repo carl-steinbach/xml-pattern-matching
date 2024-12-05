@@ -19,7 +19,12 @@ class Match:
 
     def fmt_lines(self):
         if self.set_id is None:
-            return [f"{self.element.tag}"]
+            return [
+                "".join([
+                    f"{self.element.tag}",
+                    f" (extracted={self.extracted_values})" if self.extracted_values != {} else ""
+                ])
+            ]
 
         fmt = [f"{self.element.tag} (set={self.set_id}) (extracted={self.extracted_values})"]
         for child in self.children:

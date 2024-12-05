@@ -21,12 +21,13 @@ class TestMatchChildren(MatchTestCase):
                             )
                         ]
                     }
-                                 )
+                    )
                 ]
             }
         )
-        match = match_element.match(element=self.xmltree.getroot())
-        self.assertTrue(match)
+        match, reason = match_element.match(element=self.xmltree.getroot())
+        self.assertIsNotNone(match)
+        self.assertEqual(0, len(reason))
 
     def test_match_children_set(self):
         match_element = MatchElement(
@@ -56,7 +57,8 @@ class TestMatchChildren(MatchTestCase):
                 ]
             }
         )
-        match = match_element.match(self.xmltree.getroot())
+        match, reason = match_element.match(self.xmltree.getroot())
         self.assertIsNotNone(match)
+        self.assertEqual(0, len(reason))
         self.assertEqual("expected_set", match.set_id)
         self.assertEqual("expected_set", match.children[1].set_id)
