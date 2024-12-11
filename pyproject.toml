@@ -2,7 +2,7 @@
 name = "xml_pattern_matching"
 description = "Matching conditional XML patterns and extracting values using a simple match object."
 license = {text = "MIT License"}
-version = "0.0.3"
+version = "0.0.4"
 authors = [
     {name = "Carl Steinbach", email = "Steinbachcf01@gmail.com"},
 ]

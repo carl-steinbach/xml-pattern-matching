@@ -3,6 +3,7 @@ import math
 from typing import Any, Callable, Self
 from xml.etree.ElementTree import Element
 
+from xml_pattern_matching.exceptions import ExtractionException
 from xml_pattern_matching.match import Match
 from xml_pattern_matching.match_element_list import MatchElementList
 
@@ -38,7 +39,9 @@ class MatchElement:
         self.children = children
         self.extract = extract
 
-    def match(self, element: Element, matched_path: str = "") -> tuple[Match | None, str]:
+    def match(self, element: Element, matched_path: str | None = None) -> tuple[Match | None, str]:
+        if matched_path is None:
+            matched_path = element.tag
         # Match tag.
         if self.tag:
             matched_tag: str | None = None
@@ -105,7 +108,10 @@ class MatchElement:
                 if isinstance(extraction, str):
                     extracted_values[key] = element.get(extraction)
                 elif isinstance(extraction, Callable):
-                    extracted_values[key] = extraction(element)
+                    try:
+                        extracted_values[key] = extraction(element)
+                    except ExtractionException as exception:
+                        return None, f"ExtractionException: {exception}"
                 else:
                     raise Exception(
                         f"extraction {extraction} is neither a str nor a Callable. ({matched_path})")
@@ -171,8 +177,8 @@ def match_children_set(element: Element, matched_path: str, children_set: list[M
             if child_index == len(element):
                 break
             child_match, child_reason = match_element_list.match(
-                element=element[child_index], matched_path=matched_path +
-                str(element[child_index].tag)
+                element=element[child_index], 
+                matched_path=matched_path + "/" + str(element[child_index].tag) + f"[{child_index}]"
             )
             last_reason = child_reason
             if child_match is None:
@@ -214,7 +220,6 @@ def match_children_set(element: Element, matched_path: str, children_set: list[M
             return None, f"Did not match all children. (matched {child_index} / {len(element)})."
 
     return None, f"Could not match all Match Elements. (matched {match_index} / {len(children_set)}): {last_reason}"
-
 
     # TODO: Add case for: not all children being caught by a match element
     # return None, f"Could not match all children. (matched {len(child_matches)} / {len(children_set)})"
