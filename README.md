@@ -113,6 +113,6 @@ print(match)
 
 ---
 
-_version_ 0.0.4
+_version_ 0.0.5
 
 _author_ Carl Steinbach

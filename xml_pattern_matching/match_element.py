@@ -1,3 +1,4 @@
+import copy
 import logging
 import math
 from typing import Any, Callable, Self
@@ -139,7 +140,7 @@ class MatchElement:
                     matched_path=matched_path,
                     children_set=children_set,
                     set_id=match_children_set_id,
-                    extracted_values=extracted_values
+                    extracted_values=copy.deepcopy(extracted_values)    # avoid a previous incorrect sets from modifying the extracted values
                 )
                 if match is not None:
                     return match, reason
@@ -169,7 +170,8 @@ def match_children_set(element: Element, matched_path: str, children_set: list[M
             match_element_list = children_set[match_index]
         else:
             match_element_list = MatchElementList(
-                children_set[match_index], repeat=1)
+                children_set[match_index], repeat=1
+            )
 
         repeat_index = 0
         # Match as many matches as possible, within the repeat range.
