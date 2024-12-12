@@ -5,10 +5,11 @@
 - [x] Extracting values directly from the xml structure
 - [x] Children could be list or dict
 - [x] The extract function should also be used in matching, if it throws an error, the next branch should be checked.
-- [ ] make the extraction dict generic, so that parsers can provide a type for how its supposed to look
+- [ ] make the extraction dict generic, so that parsers can provide a type for how its supposed to look, that could be enforced an used for type hints on the extraction result.
 - [x] Let extraction be more complex: each element can extract one object, that would contain the extraction from the children, so they are combined going up the tree
 - [x] match a variable amount of children, their extractions should be in list form
 - [ ] make children matching more flexible (ordered, unordered, required / forbidden)
+- [ ] Element representing an optional child, 
 
 ## Future Work
 
