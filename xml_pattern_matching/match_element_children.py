@@ -3,17 +3,6 @@ from xml.etree.ElementTree import Element
 from xml_pattern_matching.match import Match
 from xml_pattern_matching.signature import SingleMatch, MultiMatch
 
-"""
-matchElem:
-    repeat(match-element, match-element-set),
-    repeat(match-)
-    
-    
-each child has to have a "repeat value"
-within each child is a list of atomic match elements
-atomic child match elements: match-element, match-element-set RETURN A SINGLE MATCH
-"""
-
 
 class MatchElementSet(SingleMatch):
     """Matches any element from the provided set."""
