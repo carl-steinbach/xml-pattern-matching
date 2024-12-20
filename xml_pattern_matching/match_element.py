@@ -1,6 +1,5 @@
 import copy
 import logging
-import math
 from typing import Any, Callable, Self
 from xml.etree.ElementTree import Element
 
@@ -27,7 +26,8 @@ class MatchElement:
             text: str = None,
             required_attributes: list[str | tuple[str, str]] = None,
             forbidden_attributes: list[str | tuple[str, str]] = None,
-            children: dict[str, list[Self | MatchElementChild]] | list[Self | MatchElementChild] = None,
+            children: dict[str, list[Self | MatchElementChild]
+                           ] | list[Self | MatchElementChild] = None,
             extract: dict[str, Callable[[Element], any] | str] = None
     ):
         self.forbidden_attributes = forbidden_attributes
@@ -44,8 +44,9 @@ class MatchElement:
             for set, set_list in self.children.items():
                 for index, match_element_or_match_element_child in enumerate(set_list):
                     if isinstance(match_element_or_match_element_child, MatchElement):
-                        self.children[set][index] = MatchElementChild(match_element_or_match_element_child, repeat=(1, 1))
-                    
+                        self.children[set][index] = MatchElementChild(
+                            match_element_or_match_element_child, repeat=(1, 1))
+
         self.extract = extract
 
     def match(self, element: Element, matched_path: str | None = None) -> tuple[Match | None, str]:
@@ -148,7 +149,8 @@ class MatchElement:
                     matched_path=matched_path,
                     children_set=children_set,
                     set_id=match_children_set_id,
-                    extracted_values=copy.deepcopy(extracted_values)    # avoid a previous incorrect sets from modifying the extracted values
+                    # avoid a previous incorrect sets from modifying the extracted values
+                    extracted_values=copy.deepcopy(extracted_values)
                 )
                 if match is not None:
                     return match, reason
@@ -168,14 +170,15 @@ def match_children_set(element: Element, matched_path: str, children_set: list[M
     """
     matches = []
     last_reason = ""
-    index = 0 # Index for the child in the element
-    match_index = 0 # Index for the MatchChildrenElement
+    index = 0  # Index for the child in the element
+    match_index = 0  # Index for the MatchChildrenElement
     while index < len(element) and match_index < len(children_set):
         match_children_element: MultiMatch = children_set[match_index]
-        child_matches, last_reason, index = match_children_element.match(element=element, index=index, matched_path=matched_path)
+        child_matches, last_reason, index = match_children_element.match(
+            element=element, index=index, matched_path=matched_path)
         if child_matches is None:
             return None, f"Could not match all Children. (matched {match_index} / {len(children_set)}): {last_reason}"
-            
+
         matches.extend(child_matches)
         match_index += 1
 
@@ -189,7 +192,8 @@ def match_children_set(element: Element, matched_path: str, children_set: list[M
                         if isinstance(extracted_values[key], list):
                             extracted_values[key].append(value)
                         else:
-                            extracted_values[key] = [extracted_values[key], value]
+                            extracted_values[key] = [
+                                extracted_values[key], value]
                     else:
                         extracted_values[key] = value
             # Return
@@ -204,6 +208,3 @@ def match_children_set(element: Element, matched_path: str, children_set: list[M
             return None, f"Children set matched before end of element. (matched {index} / {len(element)})"
 
     return None, f"Could not match all MatchChildrenElements. (matched {match_index} / {len(children_set)}): {last_reason}"
-
-    # TODO: Add case for: not all children being caught by a match element
-    # return None, f"Could not match all children. (matched {len(child_matches)} / {len(children_set)})"
