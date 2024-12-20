@@ -6,7 +6,8 @@ from xml.etree.ElementTree import Element
 
 from xml_pattern_matching.exceptions import ExtractionException
 from xml_pattern_matching.match import Match
-from xml_pattern_matching.match_element_list import MatchElementList
+from xml_pattern_matching.match_element_children import MatchElementChild
+from xml_pattern_matching.signature import MultiMatch
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +18,7 @@ def strip_whitespace_and_newlines(text: str):
 
 class MatchElement:
     """Defines a pattern matching a single XML element and potential children."""
-    children: dict[str, list[Self]]
+    children: dict[str, list[MatchElementChild]]
     # Can be a float because infinity is used for matching unlimited elements.
 
     def __init__(
@@ -26,7 +27,7 @@ class MatchElement:
             text: str = None,
             required_attributes: list[str | tuple[str, str]] = None,
             forbidden_attributes: list[str | tuple[str, str]] = None,
-            children: dict[str, list[Self]] | list[Self] = None,
+            children: dict[str, list[Self | MatchElementChild]] | list[Self | MatchElementChild] = None,
             extract: dict[str, Callable[[Element], any] | str] = None
     ):
         self.forbidden_attributes = forbidden_attributes
@@ -38,6 +39,13 @@ class MatchElement:
                 "_": children
             }
         self.children = children
+        # Transform all children to MatchElementChild instances.
+        if self.children is not None:
+            for set, set_list in self.children.items():
+                for index, match_element_or_match_element_child in enumerate(set_list):
+                    if isinstance(match_element_or_match_element_child, MatchElement):
+                        self.children[set][index] = MatchElementChild(match_element_or_match_element_child, repeat=(1, 1))
+                    
         self.extract = extract
 
     def match(self, element: Element, matched_path: str | None = None) -> tuple[Match | None, str]:
@@ -152,76 +160,50 @@ class MatchElement:
         return None, reason
 
 
-def match_children_set(element: Element, matched_path: str, children_set: list[MatchElement],
+def match_children_set(element: Element, matched_path: str, children_set: list[MultiMatch],
                        set_id: str, extracted_values: dict[str, Any]) -> tuple[Match | None, str]:
     """Compares a list of MatchElements with the children of a given XML Element.
 
     returns: A tuple consisting of a Match object and a string with an explanation, if no match was found.
     """
-
-    # has to match each child
-    child_matches = []
+    matches = []
     last_reason = ""
-    child_index = 0
-    match_index = 0
-    while child_index < len(element) and match_index < len(children_set):
-        match_element_list: MatchElementList
-        if isinstance(children_set[match_index], MatchElementList):
-            match_element_list = children_set[match_index]
-        else:
-            match_element_list = MatchElementList(
-                children_set[match_index], repeat=1
-            )
-
-        repeat_index = 0
-        # Match as many matches as possible, within the repeat range.
-        while repeat_index < match_element_list.repeat[1]:
-            if child_index == len(element):
-                break
-            child_match, child_reason = match_element_list.match(
-                element=element[child_index], 
-                matched_path=matched_path + "/" + str(element[child_index].tag) + f"[{child_index}]"
-            )
-            last_reason = child_reason
-            if child_match is None:
-                if repeat_index < match_element_list.repeat[0]:
-                    # Not enough matches in a rows.
-                    reason = f"Expected at least {
-                        match_element_list.repeat[0]} repetitions, got {repeat_index}"
-                    return None, reason + ": " + child_reason
-                else:
-                    # At least repeat[0] matches have been found, continue with the next match element.
-                    break
-
-            child_matches.append(child_match)
-            # Append duplicate keys as list.
-            for key, value in child_match.extracted_values.items():
-                if key in extracted_values.keys():
-                    if isinstance(extracted_values[key], list):
-                        extracted_values[key].append(value)
-                    else:
-                        extracted_values[key] = [extracted_values[key], value]
-                else:
-                    extracted_values[key] = value
-
-            repeat_index += 1
-            child_index += 1
-
+    index = 0 # Index for the child in the element
+    match_index = 0 # Index for the MatchChildrenElement
+    while index < len(element) and match_index < len(children_set):
+        match_children_element: MultiMatch = children_set[match_index]
+        child_matches, last_reason, index = match_children_element.match(element=element, index=index, matched_path=matched_path)
+        if child_matches is None:
+            return None, f"Could not match all Children. (matched {match_index} / {len(children_set)}): {last_reason}"
+            
+        matches.extend(child_matches)
         match_index += 1
 
-    # ALL children have to be matched, AND but all match elements need to match completely.
+    # All MatchChildrenElements have to be matched, and all children from the element need to have been matched.
     if match_index == len(children_set):
-        if child_index == len(element):
-            return Match(
+        if index == len(element):
+            # Merge extracted values
+            for match in matches:
+                for key, value in match.extracted_values.items():
+                    if key in extracted_values.keys():
+                        if isinstance(extracted_values[key], list):
+                            extracted_values[key].append(value)
+                        else:
+                            extracted_values[key] = [extracted_values[key], value]
+                    else:
+                        extracted_values[key] = value
+            # Return
+            match = Match(
                 extracted_values=extracted_values,
                 element=element,
                 set_id=set_id,
-                children=child_matches
-            ), ""
+                children=matches
+            )
+            return match, ""
         else:
-            return None, f"Did not match all children. (matched {child_index} / {len(element)})."
+            return None, f"Children set matched before end of element. (matched {index} / {len(element)})"
 
-    return None, f"Could not match all Match Elements. (matched {match_index} / {len(children_set)}): {last_reason}"
+    return None, f"Could not match all MatchChildrenElements. (matched {match_index} / {len(children_set)}): {last_reason}"
 
     # TODO: Add case for: not all children being caught by a match element
     # return None, f"Could not match all children. (matched {len(child_matches)} / {len(children_set)})"
